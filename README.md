@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8048537.svg)](https://doi.org/10.5281/zenodo.8048537)
+
 # Supplemental Code for "Digital Formation Processes: A High-Frequency, Large-Scale Investigation"
 
 The code and data in this repository can be used to reproduce the data collection and analysis from Clindaniel and Magnani (Under Review) "Digital Formation Processes: A High-Frequency, Large-Scale Investigation." Consult the information below as a guide to navigating the repository.
