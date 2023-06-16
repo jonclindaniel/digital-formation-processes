@@ -1,0 +1,214 @@
+{
+  "Comment": "Collects Post Data From Craigslist and writes to S3",
+  "StartAt": "Pass in City-Level Site Links",
+  "States": {
+    "Pass in City-Level Site Links": {
+      "Type": "Pass",
+      "Result": [
+        {
+          "city_links": [
+            "https://atlanta.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://austin.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://boston.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://chicago.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://dallas.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://denver.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://detroit.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://houston.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://lasvegas.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://losangeles.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://miami.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://minneapolis.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://newyork.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://orangecounty.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://philadelphia.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://phoenix.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://portland.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://raleigh.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://sacramento.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://sandiego.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://seattle.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://sfbay.craigslist.org/search/zip"
+          ]
+        },
+        {
+          "city_links": [
+            "https://washingtondc.craigslist.org/search/zip"
+          ]
+        }
+      ],
+      "Next": "City-Level Map",
+      "Comment": "Pass city links to lambda workers for parallel processing"
+    },
+    "City-Level Map": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "Identify Post Links",
+        "States": {
+          "Identify Post Links": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "OutputPath": "$.Payload",
+            "Parameters": {
+              "Payload.$": "$",
+              "FunctionName": "arn:aws:lambda:us-east-1:009068789081:function:post_link_identifier:$LATEST"
+            },
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "States.TaskFailed",
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException",
+                  "Lambda.TooManyRequestsException",
+                  "Lambda.Unknown"
+                ],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 6,
+                "BackoffRate": 2
+              }
+            ],
+            "End": true
+          }
+        }
+      },
+      "Label": "City-LevelMap",
+      "ResultSelector": {
+        "flatten.$": "$[*][*]"
+      },
+      "OutputPath": "$.flatten",
+      "Next": "Post Batch-Level Map"
+    },
+    "Post Batch-Level Map": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "Collect and Process Post Data",
+        "States": {
+          "Collect and Process Post Data": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "OutputPath": "$.Payload",
+            "Parameters": {
+              "Payload.$": "$",
+              "FunctionName": "arn:aws:lambda:us-east-1:009068789081:function:post_batch_processor:$LATEST"
+            },
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "States.TaskFailed",
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException",
+                  "Lambda.TooManyRequestsException",
+                  "Lambda.Unknown"
+                ],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 6,
+                "BackoffRate": 2
+              }
+            ],
+            "End": true
+          }
+        }
+      },
+      "End": true,
+      "Label": "PostBatch-LevelMap",
+      "MaxConcurrency": 1000,
+      "ItemBatcher": {
+        "MaxItemsPerBatch": 1
+      }
+    }
+  }
+}
