@@ -119,7 +119,7 @@ def get_pg_post_links(browser, city):
             pg_post_links.append(a.get_attribute('href'))
 
     else:
-        xpath = "//a[contains(@class, 'titlestring')]"
+        xpath = "//a[contains(@class, 'cl-app-anchor text-only posting-title')]"
         wait = WebDriverWait(browser, 10)
         wait.until(element_has_text((By.XPATH, xpath)))
 
